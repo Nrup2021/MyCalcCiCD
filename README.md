@@ -5,6 +5,46 @@ live expression previews, the four basic arithmetic operations, decimal values, 
 parenthesized expressions. Its calculator logic is separated from the UI so that input
 handling and expression evaluation can be tested independently.
 
+## Objective
+
+This project demonstrates how to build, test, and deliver an Android app with GitHub
+Actions:
+
+- Pull requests targeting `main` run Kotlin lint, build the debug APK, run JVM unit tests,
+  and run Android instrumentation tests on an emulator. The debug APK and test results
+  are available as workflow artifacts.
+- The `main` branch is protected by a ruleset requiring pull requests and successful
+  **Lint / Format Check** and **Build and Test** checks before merge.
+- After a successful push to `main` (such as a PR merge), CI uses signing credentials
+  stored as GitHub Actions repository secrets to build a signed, versioned release APK
+  and publish it as a GitHub Release.
+
+This is continuous integration plus continuous delivery: the APK is published for
+people to download, but is not automatically installed on devices or deployed through
+the Play Store. See [Android CI/CD with GitHub Actions](#android-cicd-with-github-actions)
+for the workflow and signing setup.
+
+### Example: adding negative-number support
+
+Suppose a contributor changes the calculator to accept a negative number such as `-5+2`.
+They create a feature branch from the latest `main`, push their changes, and open a pull
+request targeting `main`.
+
+1. GitHub starts **Lint / Format Check** and **Build and Test** for the pull request.
+2. If the new Kotlin code has a formatting issue, lint fails and the `main` ruleset
+   blocks merging. The contributor fixes the formatting and pushes another commit.
+3. The build and tests then check that the app compiles and that the expression
+   evaluator and UI behave correctly. For example, a unit test can catch if `-5+2`
+   incorrectly returns `-7` instead of `-3`.
+4. The contributor fixes any code or test failure and pushes again. GitHub reruns the
+   checks for the updated pull request.
+5. Once all required checks pass, GitHub allows the pull request to be merged. The push
+   to `main` then triggers the signed, versioned APK release workflow.
+
+This catches style, build, and behavior problems before they enter `main`. Opening a
+pull request is still allowed when a check fails; the branch ruleset prevents merging
+until the required checks pass.
+
 ## Features
 
 - Addition, subtraction, multiplication, and division.
@@ -88,6 +128,35 @@ Lint → Build Debug APK → Unit Tests → Instrumentation Tests
    pushes to other branches upload the debug APK as a workflow artifact instead.
 
 If any required check fails, APK publishing/upload is skipped.
+
+### Require CI checks before merging pull requests
+
+Protect the `main` branch with a GitHub branch ruleset so pull requests cannot be
+merged until CI succeeds:
+
+1. In the repository, open **Settings → Rules → Rulesets** and create or edit a branch
+   ruleset.
+2. Set the ruleset to **Active** and target the `main` branch (for example, with
+   **Include by pattern** → `main`).
+3. Enable **Require a pull request before merging**.
+4. Enable **Require status checks to pass** and select **Lint / Format Check** and
+   **Build and Test**. If they are not listed yet, first run the workflow on a pull
+   request targeting `main`, then return to the ruleset and select them.
+5. Do not require **Publish GitHub Release** as a pull request check. That job runs
+   only after a successful push to `main`.
+
+To verify the protection, create a temporary test branch from the latest `main`, make
+a harmless change, push the branch, and open a pull request with `main` as the base
+branch. Confirm that **Lint / Format Check** and **Build and Test** appear and complete
+successfully. Before they complete, GitHub should show that merging is blocked by
+pending checks; after they pass, the merge becomes available, subject to any other
+rules you configured. Close the test pull request without merging if the change is only
+for verification. For a stronger check, use a disposable test PR with a known failing
+check and confirm merging remains blocked, then close it without merging.
+
+After a PR is merged, the push to `main` starts the signed release build and
+**Publish GitHub Release** job. Check the run in the repository's **Actions** tab; after
+it succeeds, find the versioned APK under **Releases**.
 
 GitHub Releases provide a free way to distribute APK downloads without a Play Store
 account. Anyone can download a release from a public repository; releases in a private
