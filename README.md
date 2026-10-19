@@ -178,6 +178,10 @@ Requirement → Test → Red → Implementation → Green → Refactor
 - **TDD and AI coding agents:** Support test-first, incremental implementation and
   validation.
 
+## Image showing workflow/pipeline executed with specified jobs and APK is generated
+
+<img width="1889" height="913" alt="Screenshot 2026-10-19 at 2 31 43 PM" src="https://github.com/user-attachments/assets/ef854685-3c7b-47f4-8fc4-26d5dc6dc25a" />
+
 Together, these practices provide automated Kotlin quality checks, early detection of
 build and test failures, repeatable Android validation, and visible test results. They
 offer a foundation for using AI coding agents while keeping correctness and code quality
