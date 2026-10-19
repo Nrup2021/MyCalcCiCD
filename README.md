@@ -24,6 +24,27 @@ people to download, but is not automatically installed on devices or deployed th
 the Play Store. See [Android CI/CD with GitHub Actions](#android-cicd-with-github-actions)
 for the workflow and signing setup.
 
+### Example: adding negative-number support
+
+Suppose a contributor changes the calculator to accept a negative number such as `-5+2`.
+They create a feature branch from the latest `main`, push their changes, and open a pull
+request targeting `main`.
+
+1. GitHub starts **Lint / Format Check** and **Build and Test** for the pull request.
+2. If the new Kotlin code has a formatting issue, lint fails and the `main` ruleset
+   blocks merging. The contributor fixes the formatting and pushes another commit.
+3. The build and tests then check that the app compiles and that the expression
+   evaluator and UI behave correctly. For example, a unit test can catch if `-5+2`
+   incorrectly returns `-7` instead of `-3`.
+4. The contributor fixes any code or test failure and pushes again. GitHub reruns the
+   checks for the updated pull request.
+5. Once all required checks pass, GitHub allows the pull request to be merged. The push
+   to `main` then triggers the signed, versioned APK release workflow.
+
+This catches style, build, and behavior problems before they enter `main`. Opening a
+pull request is still allowed when a check fails; the branch ruleset prevents merging
+until the required checks pass.
+
 ## Features
 
 - Addition, subtraction, multiplication, and division.
