@@ -89,6 +89,35 @@ Lint → Build Debug APK → Unit Tests → Instrumentation Tests
 
 If any required check fails, APK publishing/upload is skipped.
 
+### Require CI checks before merging pull requests
+
+Protect the `main` branch with a GitHub branch ruleset so pull requests cannot be
+merged until CI succeeds:
+
+1. In the repository, open **Settings → Rules → Rulesets** and create or edit a branch
+   ruleset.
+2. Set the ruleset to **Active** and target the `main` branch (for example, with
+   **Include by pattern** → `main`).
+3. Enable **Require a pull request before merging**.
+4. Enable **Require status checks to pass** and select **Lint / Format Check** and
+   **Build and Test**. If they are not listed yet, first run the workflow on a pull
+   request targeting `main`, then return to the ruleset and select them.
+5. Do not require **Publish GitHub Release** as a pull request check. That job runs
+   only after a successful push to `main`.
+
+To verify the protection, create a temporary test branch from the latest `main`, make
+a harmless change, push the branch, and open a pull request with `main` as the base
+branch. Confirm that **Lint / Format Check** and **Build and Test** appear and complete
+successfully. Before they complete, GitHub should show that merging is blocked by
+pending checks; after they pass, the merge becomes available, subject to any other
+rules you configured. Close the test pull request without merging if the change is only
+for verification. For a stronger check, use a disposable test PR with a known failing
+check and confirm merging remains blocked, then close it without merging.
+
+After a PR is merged, the push to `main` starts the signed release build and
+**Publish GitHub Release** job. Check the run in the repository's **Actions** tab; after
+it succeeds, find the versioned APK under **Releases**.
+
 GitHub Releases provide a free way to distribute APK downloads without a Play Store
 account. Anyone can download a release from a public repository; releases in a private
 repository are only available to people with repository access. Each successful push to
