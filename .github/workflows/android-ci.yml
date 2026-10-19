@@ -1,15 +1,17 @@
+
 name: Android CI
 
 on:
   push:
-    branches: [ ci-prep, main ]
+    branches: [ci-prep, main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   lint:
     name: Lint / Format Check
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -29,10 +31,11 @@ jobs:
       - name: Run ktlint check
         run: ./gradlew ktlintCheck
 
-  build:
-    name: Build
+  build-and-test:
+    name: Build and Test
     needs: lint
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -49,58 +52,20 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Build with Gradle
+      - name: Build Debug APK
         run: ./gradlew assembleDebug
-
-  unit-tests:
-    name: Unit Tests
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v5
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: '17'
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v5
-
-      - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
 
       - name: Run unit tests
         run: ./gradlew testDebugUnitTest
 
-      - name: Upload test results
+      - name: Upload unit test results
         if: always()
         uses: actions/upload-artifact@v6
         with:
           name: unit-test-results
           path: '**/build/test-results/**/*.xml'
-
-  instrumentation-tests:
-    name: Instrumentation Tests
-    needs: unit-tests
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v5
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: '17'
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v5
-
-      - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
+          if-no-files-found: ignore
+          retention-days: 14
 
       - name: Enable KVM
         run: |
@@ -144,3 +109,14 @@ jobs:
         with:
           name: instrumentation-test-results
           path: '**/build/outputs/androidTest-results/**/*.xml'
+          if-no-files-found: ignore
+          retention-days: 14
+
+      # This step runs only if every preceding step succeeds.
+      - name: Upload Debug APK
+        uses: actions/upload-artifact@v6
+        with:
+          name: MyCalculator-debug-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14

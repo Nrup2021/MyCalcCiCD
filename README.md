@@ -68,17 +68,19 @@ code is pushed to the `ci-prep` or `main` branch, or when a pull request targets
 The jobs are chained so each stage only runs after the preceding stage succeeds:
 
 ```text
-Lint / Format Check → Build → Unit Tests → Instrumentation Tests
+Lint → Build APK → Unit Tests → Instrumentation Tests → Publish APK
 ```
 
-1. **Lint / Format Check (`ktlintCheck`)** checks Kotlin formatting and coding standards.
-2. **Build (`assembleDebug`)** compiles the debug application.
+1. **Lint (`ktlintCheck`)** checks Kotlin formatting and coding standards.
+2. **Build APK (`assembleDebug`)** compiles the debug application.
 3. **Unit Tests (`testDebugUnitTest`)** runs JVM tests on the CI host without an Android
    device.
 4. **Instrumentation Tests (`connectedDebugAndroidTest`)** runs Android tests on an
    API 34 x86_64 emulator.
-5. **Test Result Artifacts** uploads unit-test and instrumentation-test XML results for
-   later inspection.
+5. **Publish APK** uploads the debug APK as a workflow artifact.
+
+If any required check fails before the final upload step, the APK publish step is skipped
+and the build is treated as unsuccessful.
 
 ### Why run lint first?
 
