@@ -5,6 +5,25 @@ live expression previews, the four basic arithmetic operations, decimal values, 
 parenthesized expressions. Its calculator logic is separated from the UI so that input
 handling and expression evaluation can be tested independently.
 
+## Objective
+
+This project demonstrates how to build, test, and deliver an Android app with GitHub
+Actions:
+
+- Pull requests targeting `main` run Kotlin lint, build the debug APK, run JVM unit tests,
+  and run Android instrumentation tests on an emulator. The debug APK and test results
+  are available as workflow artifacts.
+- The `main` branch is protected by a ruleset requiring pull requests and successful
+  **Lint / Format Check** and **Build and Test** checks before merge.
+- After a successful push to `main` (such as a PR merge), CI uses signing credentials
+  stored as GitHub Actions repository secrets to build a signed, versioned release APK
+  and publish it as a GitHub Release.
+
+This is continuous integration plus continuous delivery: the APK is published for
+people to download, but is not automatically installed on devices or deployed through
+the Play Store. See [Android CI/CD with GitHub Actions](#android-cicd-with-github-actions)
+for the workflow and signing setup.
+
 ## Features
 
 - Addition, subtraction, multiplication, and division.
