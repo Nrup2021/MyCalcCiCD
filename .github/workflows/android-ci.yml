@@ -112,11 +112,38 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
-      # This step runs only if every preceding step succeeds.
+      - name: Build signed release APK
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          test -n "$ANDROID_KEYSTORE_BASE64" || { echo "Missing ANDROID_KEYSTORE_BASE64 secret"; exit 1; }
+          test -n "$ANDROID_KEYSTORE_PASSWORD" || { echo "Missing ANDROID_KEYSTORE_PASSWORD secret"; exit 1; }
+          test -n "$ANDROID_KEY_ALIAS" || { echo "Missing ANDROID_KEY_ALIAS secret"; exit 1; }
+          test -n "$ANDROID_KEY_PASSWORD" || { echo "Missing ANDROID_KEY_PASSWORD secret"; exit 1; }
+          keystore_file="$RUNNER_TEMP/release-keystore.jks"
+          trap 'rm -f "$keystore_file"' EXIT
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$keystore_file"
+          ANDROID_KEYSTORE_FILE="$keystore_file" ./gradlew assembleRelease
+
+      # Main pushes publish the signed release APK; all other events publish the debug APK.
       - name: Upload Debug APK
+        if: github.event_name != 'push' || github.ref != 'refs/heads/main'
         uses: actions/upload-artifact@v6
         with:
           name: MyCalculator-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload signed release APK
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v6
+        with:
+          name: MyCalculator-release-apk
+          path: app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
           retention-days: 14

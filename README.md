@@ -61,26 +61,70 @@ This project demonstrates a YAML-based Android continuous integration (CI) pipel
 using **GitHub Actions, Gradle, Kotlin, and ktlint**. It automates code style checks,
 Android builds, local unit tests, and instrumentation tests on an Android emulator.
 Test result files are uploaded as workflow artifacts, including when a test job fails.
+After all checks succeed, pushes to `main` publish a signed release APK; other workflow
+runs publish the debug APK.
 
 The workflow is defined in
 [`.github/workflows/android-ci.yml`](.github/workflows/android-ci.yml). It runs when
 code is pushed to the `ci-prep` or `main` branch, or when a pull request targets `main`.
-The jobs are chained so each stage only runs after the preceding stage succeeds:
+The checks are chained, and the final APK artifact depends on the event branch:
 
 ```text
-Lint → Build APK → Unit Tests → Instrumentation Tests → Publish APK
+Lint → Build Debug APK → Unit Tests → Instrumentation Tests
+    → [main push: Build Signed Release APK → Publish Release APK]
+    → [other events: Publish Debug APK]
 ```
 
 1. **Lint (`ktlintCheck`)** checks Kotlin formatting and coding standards.
-2. **Build APK (`assembleDebug`)** compiles the debug application.
+2. **Build Debug APK (`assembleDebug`)** compiles the debug application.
 3. **Unit Tests (`testDebugUnitTest`)** runs JVM tests on the CI host without an Android
    device.
 4. **Instrumentation Tests (`connectedDebugAndroidTest`)** runs Android tests on an
    API 34 x86_64 emulator.
-5. **Publish APK** uploads the debug APK as a workflow artifact.
+5. After all checks pass, a push to `main` builds and publishes the signed release APK.
+   Pull requests and pushes to other branches publish the debug APK instead.
 
-If any required check fails before the final upload step, the APK publish step is skipped
-and the build is treated as unsuccessful.
+If any required check fails, both APK upload steps are skipped.
+
+### Configure release signing
+
+Create the release keystore once on a trusted local machine. You need a JDK installed
+for the `keytool` command:
+
+```bash
+keytool -genkeypair -v \
+  -keystore release-key.jks \
+  -keyalg RSA -keysize 2048 -validity 10000 \
+  -alias mycalculator
+```
+
+Choose and securely save the keystore and key passwords. Keep a secure backup of
+`release-key.jks`: future app updates must use the same signing key. Do not commit the
+keystore or passwords to the repository.
+
+Encode the keystore for GitHub Actions. On macOS, from the directory containing the
+file, run:
+
+```bash
+base64 -i release-key.jks | pbcopy
+```
+
+This copies the Base64-encoded keystore to the clipboard. In the GitHub repository, go
+to **Settings → Secrets and variables → Actions → Repository secrets → New repository
+secret**. Add each of the following as a separate **repository secret** (not a
+repository variable or an environment secret):
+
+| Secret name | Value |
+| --- | --- |
+| `ANDROID_KEYSTORE_BASE64` | Paste the Base64 contents copied above. |
+| `ANDROID_KEYSTORE_PASSWORD` | The keystore password chosen when creating the keystore. |
+| `ANDROID_KEY_ALIAS` | The alias used when creating the key (in this example, `mycalculator`). |
+| `ANDROID_KEY_PASSWORD` | The password for that key. |
+
+The workflow reads these secrets only for pushes to `main`. It decodes the keystore
+into the runner's temporary directory, uses the credentials to build the signed release
+APK, and removes the temporary keystore afterward. Other workflow runs upload the debug
+APK and do not need the signing secrets.
 
 ### Why run lint first?
 
