@@ -234,7 +234,8 @@ Requirement → Test → Red → Implementation → Green → Refactor
 
 ## Image showing workflow/pipeline executed with specified jobs and APK is generated
 
-<img width="1889" height="913" alt="Screenshot 2026-10-19 at 2 31 43 PM" src="https://github.com/user-attachments/assets/ef854685-3c7b-47f4-8fc4-26d5dc6dc25a" />
+<img width="1884" height="1769" alt="screencapture-github-Nrup2021-MyCalcCiCD-actions-runs-39234083019-2026-10-19-15_40_10" src="https://github.com/user-attachments/assets/0bf1c438-bfcf-4e94-8300-460ed38c46d4" />
+
 
 Together, these practices provide automated Kotlin quality checks, early detection of
 build and test failures, repeatable Android validation, and visible test results. They
