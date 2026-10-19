@@ -7,6 +7,10 @@ val releaseKeystoreFile = providers.environmentVariable("ANDROID_KEYSTORE_FILE")
 val releaseKeystorePassword = providers.environmentVariable("ANDROID_KEYSTORE_PASSWORD").orNull
 val releaseKeyAlias = providers.environmentVariable("ANDROID_KEY_ALIAS").orNull
 val releaseKeyPassword = providers.environmentVariable("ANDROID_KEY_PASSWORD").orNull
+// CI supplies a unique version for each main-branch release; defaults keep local builds predictable.
+val appVersionCode = providers.gradleProperty("appVersionCode").orElse("1").get().toInt()
+val appVersionName = providers.gradleProperty("appVersionName").orElse("1.0").get()
+// Signing is optional for local builds; CI provides these credentials only for main releases.
 val hasReleaseSigning = listOf(
     releaseKeystoreFile,
     releaseKeystorePassword,
@@ -25,8 +29,8 @@ android {
         applicationId = "com.plcoding.mycalculator"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = appVersionCode
+        versionName = appVersionName
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

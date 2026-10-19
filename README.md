@@ -55,23 +55,24 @@ On Windows, use `gradlew.bat` instead of `./gradlew`.
 Unit tests cover the expression evaluator and ViewModel behavior. Instrumentation tests
 run in an Android runtime on a device or emulator.
 
-## Android CI with GitHub Actions
+## Android CI/CD with GitHub Actions
 
-This project demonstrates a YAML-based Android continuous integration (CI) pipeline
-using **GitHub Actions, Gradle, Kotlin, and ktlint**. It automates code style checks,
-Android builds, local unit tests, and instrumentation tests on an Android emulator.
-Test result files are uploaded as workflow artifacts, including when a test job fails.
-After all checks succeed, pushes to `main` publish a signed release APK; other workflow
-runs publish the debug APK.
+This project demonstrates Android continuous integration and continuous delivery
+(CI/CD) using **GitHub Actions, Gradle, Kotlin, and ktlint**. The workflow runs code
+style checks, builds the app, and runs unit and instrumentation tests. Test result files
+are uploaded as workflow artifacts, including when a test job fails. After all checks
+succeed, pushes to `main` publish a versioned GitHub Release containing the signed APK.
+Other workflow runs upload the debug APK as a workflow artifact. This is automated
+delivery for download; it does not install or deploy the app to users' devices.
 
-The workflow is defined in
+The **Android CI/CD** workflow is defined in
 [`.github/workflows/android-ci.yml`](.github/workflows/android-ci.yml). It runs when
 code is pushed to the `ci-prep` or `main` branch, or when a pull request targets `main`.
-The checks are chained, and the final APK artifact depends on the event branch:
+The checks are chained; the final delivery step depends on the event branch:
 
 ```text
 Lint → Build Debug APK → Unit Tests → Instrumentation Tests
-    → [main push: Build Signed Release APK → Publish Release APK]
+    → [main push: Build Signed Release APK → Publish versioned GitHub Release]
     → [other events: Publish Debug APK]
 ```
 
@@ -82,9 +83,16 @@ Lint → Build Debug APK → Unit Tests → Instrumentation Tests
 4. **Instrumentation Tests (`connectedDebugAndroidTest`)** runs Android tests on an
    API 34 x86_64 emulator.
 5. After all checks pass, a push to `main` builds and publishes the signed release APK.
-   Pull requests and pushes to other branches publish the debug APK instead.
+   Each release is tagged `v1.0.<run-number>`; the Android `versionName` is
+   `1.0.<run-number>` and `versionCode` is the workflow run number. Pull requests and
+   pushes to other branches upload the debug APK as a workflow artifact instead.
 
-If any required check fails, both APK upload steps are skipped.
+If any required check fails, APK publishing/upload is skipped.
+
+GitHub Releases provide a free way to distribute APK downloads without a Play Store
+account. Anyone can download a release from a public repository; releases in a private
+repository are only available to people with repository access. Each successful push to
+`main` creates or updates the corresponding versioned release and attaches the APK.
 
 ### Configure release signing
 
@@ -124,7 +132,9 @@ repository variable or an environment secret):
 The workflow reads these secrets only for pushes to `main`. It decodes the keystore
 into the runner's temporary directory, uses the credentials to build the signed release
 APK, and removes the temporary keystore afterward. Other workflow runs upload the debug
-APK and do not need the signing secrets.
+APK and do not need the signing secrets. The separate publishing job uses the workflow's
+`GITHUB_TOKEN` with `contents: write` permission to create the release; the build job
+only has read permission.
 
 ### Why run lint first?
 

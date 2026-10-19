@@ -1,5 +1,5 @@
 
-name: Android CI
+name: Android CI/CD
 
 on:
   push:
@@ -35,6 +35,8 @@ jobs:
     name: Build and Test
     needs: lint
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout repository
@@ -127,7 +129,19 @@ jobs:
           keystore_file="$RUNNER_TEMP/release-keystore.jks"
           trap 'rm -f "$keystore_file"' EXIT
           printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$keystore_file"
-          ANDROID_KEYSTORE_FILE="$keystore_file" ./gradlew assembleRelease
+          version_name="1.0.${GITHUB_RUN_NUMBER}"
+          ANDROID_KEYSTORE_FILE="$keystore_file" ./gradlew assembleRelease \
+            -PappVersionCode="$GITHUB_RUN_NUMBER" \
+            -PappVersionName="$version_name"
+
+      - name: Upload signed release APK for publishing
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v6
+        with:
+          name: signed-release-apk
+          path: app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: error
+          retention-days: 1
 
       # Main pushes publish the signed release APK; all other events publish the debug APK.
       - name: Upload Debug APK
@@ -139,11 +153,26 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-      - name: Upload signed release APK
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: actions/upload-artifact@v6
+  publish-release:
+    name: Publish GitHub Release
+    needs: build-and-test
+    if: success() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download signed release APK
+        uses: actions/download-artifact@v6
         with:
-          name: MyCalculator-release-apk
-          path: app/build/outputs/apk/release/app-release.apk
-          if-no-files-found: error
-          retention-days: 14
+          name: signed-release-apk
+          path: release-apk
+
+      - name: Publish signed APK as GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.${{ github.run_number }}
+          name: MyCalculator v1.0.${{ github.run_number }}
+          generate_release_notes: true
+          files: release-apk/app-release.apk
+          overwrite_files: true
