@@ -5,6 +5,17 @@ live expression previews, the four basic arithmetic operations, decimal values, 
 parenthesized expressions. Its calculator logic is separated from the UI so that input
 handling and expression evaluation can be tested independently.
 
+## Development, Testing, and CI/CD
+
+- Followed a **Test-Driven Development (TDD)** approach by defining expected behavior
+  and edge cases in tests before implementing features.
+- Configured **GitHub Actions** to run Kotlin lint and formatting checks, build the app,
+  and execute automated unit tests and Android instrumentation tests for pull requests.
+- Added test coverage for expression evaluation and calculator ViewModel behavior,
+  including arithmetic, operator precedence, and input handling.
+- Automated versioned APK delivery: after successful checks on `main`, GitHub Actions
+  builds a signed APK and publishes it as a GitHub Release.
+
 ## Objective
 
 This project demonstrates how to build, test, and deliver an Android app with GitHub
